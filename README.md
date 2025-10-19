@@ -65,6 +65,16 @@ It will appear instantly in the control panel table.
 
 ---
 
+## 📦 Releases
+
+### Stable
+- `v1.5` — Modular interpreter, Now Playing popup, table loader, full control panel
+
+### Pre-release
+- [`v1.5.904-beta`](https://github.com/ToedSquire/VisualisationStation/releases/tag/v1.5.904-beta) — Experimental Rio Pulse integration and ZenCloud hooks
+
+---
+
 ## 📜 License
 
 MIT — free to remix, share, and empower.
