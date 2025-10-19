@@ -24,7 +24,7 @@ VisSt is a modular, assistant-powered dashboard for audio-reactive visuals, desi
 ├── control.html
 ├── visualiser.html
 ├── help.html
-├── visualisers/
+├── visualisers/ <------ You will need to make this Folder before first use.
 │   ├── bloom.js
 ```
 
