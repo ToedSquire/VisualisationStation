@@ -26,10 +26,6 @@ VisSt is a modular, assistant-powered dashboard for audio-reactive visuals, desi
 ├── help.html
 ├── visualisers/
 │   ├── bloom.js
-│   ├── glitch.js
-│   ├── pulse.js
-│   ├── glyphtrail.js
-│   └── sambaBurst.js
 ```
 
 ---
