@@ -1,4 +1,4 @@
-# VisSt v1.5 — Modular VisualisationStation
+# VisSt v1.5 — Modular Visualisation System
 
 VisSt is a modular, assistant-powered dashboard for audio-reactive visuals, designed for retail, smart home, and family empowerment. Built with Electron, it features a clean control panel, dynamic visualiser canvas, and plug-and-play VisScript support.
 
