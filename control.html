@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VisSt Control Panel</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    select, input[type="color"], input[type="range"], input[type="text"], button {
+      background: #222;
+      color: #eee;
+      border: 1px solid #555;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #00ffe0;
+      color: #000;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 8px;
+      border: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background: #222;
+    }
+
+    td button {
+      width: auto;
+      padding: 4px 10px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎚️ VisSt Control Panel</h1>
+
+  <div class="section">
+    <label>Mood Color:</label>
+    <input type="color" onchange="setColor(this.value)">
+  </div>
+
+  <div class="section">
+    <label>Background Color:</label>
+    <input type="color" onchange="setBackground(this.value)">
+  </div>
+
+  <div class="section">
+    <label>Jingle Selector:</label>
+    <select onchange="playJingle(this.value)">
+      <option value="">Select a jingle</option>
+      <option value="jingle1.mp3">Jingle 1</option>
+      <option value="jingle2.mp3">Jingle 2</option>
+      <option value="jingle3.mp3">Jingle 3</option>
+    </select>
+    <audio id="jinglePlayer" controls></audio>
+  </div>
+
+  <div class="section">
+    <label>Tempo:</label>
+    <input type="range" min="1" max="20" value="5" onchange="setTempo(this.value)">
+  </div>
+
+  <div class="section">
+    <label>Audio Source:</label>
+    <select onchange="setAudioSource(this.value)">
+      <option value="mic">Microphone</option>
+      <option value="stereo">Stereo Mix</option>
+      <option value="silence">Silence Mode</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <label>Timetable Trigger:</label>
+    <select onchange="scheduleTrigger(this.value)">
+      <option value="">Select a time</option>
+      <option value="10">Trigger in 10s</option>
+      <option value="30">Trigger in 30s</option>
+      <option value="60">Trigger in 60s</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <label>Now Playing:</label>
+    <input type="text" id="deckAInput" placeholder="Deck A Track">
+    <input type="text" id="deckBInput" placeholder="Deck B Track">
+    <button onclick="sendPlayingNow()">Show Playing Now</button>
+  </div>
+
+  <div class="section">
+    <label>Available VisScripts:</label>
+    <table id="visualiserTable">
+      <thead>
+        <tr><th>File</th><th>Action</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <button onclick="openHelp()">Open Help</button>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const path = require('path');
+
+    function setColor(value) {
+      ipcRenderer.send('control-message', { type: 'color', value });
+    }
+
+    function setBackground(value) {
+      ipcRenderer.send('control-message', { type: 'background', value });
+    }
+
+    function playJingle(file) {
+      const player = document.getElementById('jinglePlayer');
+      player.src = file;
+      player.play();
+      ipcRenderer.send('control-message', { type: 'jingle' });
+    }
+
+    function setTempo(value) {
+      ipcRenderer.send('control-message', { type: 'tempo', value });
+    }
+
+    function setAudioSource(value) {
+      ipcRenderer.send('control-message', { type: 'audio-source', value });
+    }
+
+    function scheduleTrigger(seconds) {
+      setTimeout(() => {
+        ipcRenderer.send('control-message', { type: 'trigger', value: 'scheduled' });
+      }, parseInt(seconds) * 1000);
+    }
+
+    function sendPlayingNow() {
+      const deckA = document.getElementById('deckAInput').value || '—';
+      const deckB = document.getElementById('deckBInput').value || '—';
+      ipcRenderer.send('control-message', {
+        type: 'assistantTrigger',
+        action: 'showPlayingNow',
+        deckA,
+        deckB
+      });
+    }
+
+    function openHelp() {
+      ipcRenderer.send('open-help');
+    }
+
+    const visualiserDir = path.join(__dirname, 'visualisers');
+    const tableBody = document.querySelector('#visualiserTable tbody');
+
+    fs.readdirSync(visualiserDir).forEach(file => {
+      if (file.endsWith('.js')) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${file}</td>
+          <td><button onclick="loadVisualiser('${file}')">Load</button></td>
+        `;
+        tableBody.appendChild(row);
+      }
+    });
+
+    function loadVisualiser(file) {
+      ipcRenderer.send('control-message', {
+        type: 'load-visualiser',
+        file
+      });
+    }
+  </script>
+</body>
+</html>

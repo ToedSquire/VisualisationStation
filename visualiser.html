@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VisSt Visualiser</title>
+  <style>
+    html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="visualCanvas"></canvas>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const vm = require('vm');
+    const canvas = document.getElementById('visualCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let speed = 5;
+    let color = '#00ffe0';
+    let background = '#000000';
+    let audioSource = 'mic';
+    let audioLevel = 0;
+    let syntheticLevel = 0;
+    let currentVisScript = null;
+    let nowPlaying = { deckA: '', deckB: '', visible: false, timestamp: 0 };
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    ipcRenderer.on('visualiser-message', (e, data) => {
+      if (data.type === 'color') color = data.value;
+      if (data.type === 'background') background = data.value;
+      if (data.type === 'tempo') speed = parseInt(data.value);
+      if (data.type === 'audio-source') {
+        audioSource = data.value;
+        if (audioSource !== 'silence') startAudioCapture();
+      }
+      if (data.type === 'assistantTrigger' && data.action === 'showPlayingNow') {
+        nowPlaying.deckA = data.deckA || '—';
+        nowPlaying.deckB = data.deckB || '—';
+        nowPlaying.visible = true;
+        nowPlaying.timestamp = Date.now();
+      }
+      if (data.type === 'visstscript-load') {
+        try {
+          const sandbox = { module: {}, require };
+          const script = new vm.Script(data.code);
+          script.runInNewContext(sandbox);
+          currentVisScript = sandbox.module.exports;
+          if (currentVisScript.init) currentVisScript.init(ctx, canvas);
+        } catch (err) {
+          console.error("VisScript load failed:", err);
+        }
+      }
+    });
+
+    function startAudioCapture() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function updateAudio() {
+          if (audioSource === 'silence') return;
+          analyser.getByteFrequencyData(dataArray);
+          audioLevel = dataArray.reduce((a, b) => a + b) / bufferLength;
+          requestAnimationFrame(updateAudio);
+        }
+
+        updateAudio();
+      }).catch(err => {
+        console.error("Audio capture failed:", err);
+      });
+    }
+
+    function drawNowPlaying() {
+      if (!nowPlaying.visible) return;
+      const elapsed = Date.now() - nowPlaying.timestamp;
+      if (elapsed > 10000) {
+        nowPlaying.visible = false;
+        return;
+      }
+
+      const boxWidth = 300;
+      const boxHeight = 90;
+      const x = canvas.width - boxWidth - 20;
+      const y = canvas.height - boxHeight - 20;
+
+      ctx.fillStyle = '#222';
+      ctx.strokeStyle = '#00ffe0';
+      ctx.lineWidth = 2;
+      ctx.fillRect(x, y, boxWidth, boxHeight);
+      ctx.strokeRect(x, y, boxWidth, boxHeight);
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px Segoe UI';
+      ctx.fillText('🎶 Playing Now!', x + 12, y + 24);
+      ctx.font = '14px Segoe UI';
+      ctx.fillText(`Deck A: ${nowPlaying.deckA}`, x + 12, y + 48);
+      ctx.fillText(`Deck B: ${nowPlaying.deckB}`, x + 12, y + 70);
+    }
+
+    function draw() {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (audioSource === 'silence') {
+        syntheticLevel = 40 + Math.sin(Date.now() / (100 / speed)) * 20;
+        audioLevel = syntheticLevel;
+      }
+
+      if (currentVisScript && typeof currentVisScript.update === 'function') {
+        currentVisScript.update(ctx, canvas, audioLevel, color);
+      }
+
+      drawNowPlaying();
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+</body>
+</html>

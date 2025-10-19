@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mashup Help</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #222;
+      padding: 12px;
+      font-size: 22px;
+      text-align: center;
+      font-weight: 600;
+      border-bottom: 1px solid #444;
+    }
+
+    #search {
+      padding: 10px;
+      border: none;
+      width: 100%;
+      background: #333;
+      color: #fff;
+      font-size: 16px;
+      border-bottom: 1px solid #444;
+    }
+
+    #main {
+      display: flex;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      background: #1a1a1a;
+      padding: 10px;
+      width: 180px;
+      flex-shrink: 0;
+      border-right: 1px solid #333;
+    }
+
+    #sidebar button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    #sidebar button:hover {
+      background: #00ffe0;
+      color: #000;
+    }
+
+    #content {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .highlight {
+      color: #00ffe0;
+      font-weight: bold;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>🧠 Mashup Help & Feature Guide</header>
+  <input id="search" placeholder="Search help topics..." oninput="searchDocs(this.value)">
+  <div id="main">
+    <div id="sidebar">
+      <button onclick="loadTopic('setup')">Setup</button>
+      <button onclick="loadTopic('audio')">Audio</button>
+      <button onclick="loadTopic('visuals')">Visuals</button>
+      <button onclick="loadTopic('controls')">Controls</button>
+      <button onclick="loadTopic('timetable')">Timetable</button>
+      <button onclick="loadTopic('advanced')">Advanced Features</button>
+    </div>
+    <div id="content">Select a topic to begin.</div>
+  </div>
+
+  <script>
+    const topics = {
+      setup: `
+        <h2 class="highlight">Setup</h2>
+        <p>To begin using <strong>Mashup VisualisationStation</strong>:</p>
+        <ul>
+          <li>Launch both <strong>control.html</strong> and <strong>visualiser.html</strong> via Electron.</li>
+          <li>Click <strong>Help</strong> in the control window to open this panel.</li>
+          <li>Ensure your audio input is set to either <strong>Microphone</strong> or <strong>Stereo Mix</strong>.</li>
+        </ul>
+      `,
+      audio: `
+        <h2 class="highlight">Audio</h2>
+        <p>Visuals react to live audio input using the Web Audio API.</p>
+        <ul>
+          <li><strong>Microphone</strong>: Captures ambient sound or jingle playback.</li>
+          <li><strong>Stereo Mix</strong>: Captures system-wide audio (music, browser, etc).</li>
+          <li>Use the <strong>Audio Source</strong> dropdown in the control panel to switch modes.</li>
+        </ul>
+      `,
+      visuals: `
+        <h2 class="highlight">Visuals</h2>
+        <p>Choose from four visualiser modes:</p>
+        <ul>
+          <li><strong>Bloom</strong>: Expanding circles based on volume.</li>
+          <li><strong>Glitch</strong>: Random pixel bursts driven by frequency.</li>
+          <li><strong>Pulse</strong>: Breathing orb synced to tempo.</li>
+          <li><strong>GlyphTrail</strong>: Floating shapes that trail across the canvas.</li>
+        </ul>
+        <p>Visuals adapt to <strong>audioLevel</strong>, mood color, and background settings.</p>
+      `,
+      controls: `
+        <h2 class="highlight">Controls</h2>
+        <p>The <strong>VaSt Control Panel</strong> includes:</p>
+        <ul>
+          <li><strong>Mood Color Picker</strong>: Sets the primary visual color.</li>
+          <li><strong>Background Color Picker</strong>: Sets canvas background.</li>
+          <li><strong>Jingle Selector</strong>: Choose and play audio clips.</li>
+          <li><strong>Tempo Slider</strong>: Controls animation speed.</li>
+          <li><strong>Visualiser Mode</strong>: Switch between visual styles.</li>
+          <li><strong>Audio Source</strong>: Toggle between mic and stereo mix.</li>
+        </ul>
+      `,
+      timetable: `
+        <h2 class="highlight">Timetable</h2>
+        <p>Use the <strong>Timetable Trigger</strong> to schedule visual or audio events:</p>
+        <ul>
+          <li>Select a delay (e.g. 10s, 30s, 60s).</li>
+          <li>After the delay, a trigger message is sent to the visualiser.</li>
+          <li>Use this for timed transitions, mood shifts, or performance cues.</li>
+        </ul>
+      `,
+      advanced: `
+        <h2 class="highlight">Advanced Features</h2>
+        <p>Additional capabilities include:</p>
+        <ul>
+          <li><strong>IPC Messaging</strong>: Control and visualiser windows communicate via Electron IPC.</li>
+          <li><strong>Live Audio Analysis</strong>: Uses FFT and average volume to drive visuals.</li>
+          <li><strong>Modular Design</strong>: Each window runs independently and can be extended.</li>
+          <li><strong>Custom Jingles</strong>: Add your own MP3 files to the selector.</li>
+          <li><strong>Visual Meter</strong>: Optional audio-level display (coming soon).</li>
+        </ul>
+        <p>For deeper integration or automation, consider adding a config loader or timeline scheduler.</p>
+      `
+    };
+
+    function loadTopic(key) {
+      document.getElementById('content').innerHTML = topics[key];
+    }
+
+    function searchDocs(query) {
+      const match = Object.entries(topics).find(([k, v]) => v.toLowerCase().includes(query.toLowerCase()));
+      if (match) loadTopic(match[0]);
+      else document.getElementById('content').innerHTML = "<p>No matching help found.</p>";
+    }
+  </script>
+</body>
+</html>
